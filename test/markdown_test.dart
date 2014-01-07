@@ -834,7 +834,8 @@ void main() {
   });
 
   group('Resolver', () {
-    var nyanResolver = (text) => new Text('~=[,,_${text}_,,]:3');
+    var nyanResolver = (String text, String url) =>
+        url != null ? url: new Text('~=[,,_${text}_,,]:3');
     validate('simple resolver', '''
         resolve [this] thing
         ''', '''

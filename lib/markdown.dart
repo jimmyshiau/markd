@@ -11,12 +11,21 @@ part 'src/markdown/block_parser.dart';
 part 'src/markdown/html_renderer.dart';
 part 'src/markdown/inline_parser.dart';
 
-typedef Node Resolver(String name);
+/** Returns the URL of the given link, or null if it is not a link.
+ *
+ * * [name] - the name of link, i.e., the text inside `[]`.
+ * * [url] - the URL of link, i.e., the text inside `()`. Notice that
+ * it is null if there is no `()` following `[]`.
+ *
+ * > Note: if [url] is null, you can return a [Node] instance (in additions
+ * to `null` or a String instance (URL)).
+ */
+typedef String LinkResolver(String name, String url);
 
 /// Converts the given string of markdown to HTML.
-String markdownToHtml(String markdown, {inlineSyntaxes, linkResolver}) {
-  final document = new Document(inlineSyntaxes: inlineSyntaxes,
-      linkResolver: linkResolver);
+String markdownToHtml(String markdown,
+    {List<InlineSyntax> inlineSyntaxes, LinkResolver linkResolver}) {
+  final Document document = new Document(inlineSyntaxes, linkResolver);
 
   // Replace windows line endings with unix line endings, and split.
   final lines = markdown.replaceAll('\r\n','\n').split('\n');
@@ -35,11 +44,27 @@ String escapeHtml(String html) {
 /// Maintains the context needed to parse a markdown document.
 class Document {
   final Map<String, Link> refLinks;
-  List<InlineSyntax> inlineSyntaxes;
-  Resolver linkResolver;
+  final List<InlineSyntax> inlineSyntaxes;
 
-  Document({this.inlineSyntaxes, this.linkResolver})
-    : refLinks = <String, Link>{};
+  factory Document(List<InlineSyntax> inlineSyntaxes, LinkResolver linkResolver) {
+    List<InlineSyntax> syntaxes =
+      inlineSyntaxes != null || linkResolver != null ?
+        new List.from(InlineParser.defaultSyntaxes):
+        InlineParser.defaultSyntaxes;
+
+    if (linkResolver != null) {
+      assert(syntaxes[2] is LinkSyntax);
+      syntaxes[2] = new LinkSyntax(linkResolver);
+    }
+
+    if (inlineSyntaxes != null)
+      syntaxes.insertAll(0, inlineSyntaxes);
+      // Custom link resolver goes after the generic text syntax.
+
+    return new Document._(syntaxes);
+  }
+
+  Document._(this.inlineSyntaxes) : refLinks = <String, Link>{};
 
   parseRefLinks(List<String> lines) {
     // This is a hideous regex. It matches:
@@ -58,9 +83,9 @@ class Document {
       final match = pattern.firstMatch(lines[i]);
       if (match != null) {
         // Parse the link.
-        var id = match[1];
-        var url = match[2];
-        var title = match[3];
+        String id = match[1];
+        String url = match[2];
+        String title = match[3];
 
         if (title == '') {
           // No title.

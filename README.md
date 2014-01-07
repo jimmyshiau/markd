@@ -1,21 +1,26 @@
-dartdoc markdown library
-========================
+Dart Markdown Library
+=====================
 
-This is a standalone version of the [dartdoc][dartdoc] markdown library. It 
-parses markdown and converts it to HTML.
+A fork of [David Peek's dart-markdown](https://github.com/dpeek/dart-markdown)
+for easy customization of Markdown syntaxes.
 
-You can see a demo running in the browser [here][demo] (tested in Chrome 
-and Dartium). The client library currently only supports HTML syntax 
-highlighting do to some dart:io dependencies in libcss and analyzer_experimental.
+**Differences:**
+
+1. `LinkResolver` replaces `Resolver` to provide more options.
+
+2. `InlineSyntax` introduces additional argument called `caseSensitive`.
+
 
 Installation
 ------------
 
 Add this to your `pubspec.yaml` (or create it):
+
 ```yaml
 dependencies:
-  markdown: any
+  markd: any
 ```
+
 Then run the [Pub Package Manager][pub] (comes with the Dart SDK):
 
     pub install
@@ -31,19 +36,4 @@ main() {
 }
 ```
 
-Version 0.4 adds support for GitHub style triple backtick code blocks, with 
-built in Dart syntax coloring. Custom classifiers can be added using a syntax list:
-
-```dart
-import 'package:markdown/markdown.dart';
-
-main() {
-  List<InlineSyntax> nyanSyntax =
-      [new TextSyntax('nyan', sub: '~=[,,_,,]:3')];
-  print(markdownToHtml('nyan', inlineSyntaxes: nyanSyntax));
-}
-```
-
-[dartdoc]: http://code.google.com/p/dart/source/browse/trunk/dart/sdk/lib/_internal/dartdoc
 [pub]: http://www.dartlang.org/docs/pub-package-manager
-[demo]: http://dpeek.github.com/dart-markdown
