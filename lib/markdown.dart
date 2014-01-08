@@ -47,19 +47,29 @@ class Document {
   final List<InlineSyntax> inlineSyntaxes;
 
   factory Document(List<InlineSyntax> inlineSyntaxes, LinkResolver linkResolver) {
-    List<InlineSyntax> syntaxes =
-      inlineSyntaxes != null || linkResolver != null ?
-        new List.from(InlineParser.defaultSyntaxes):
-        InlineParser.defaultSyntaxes;
+    List<InlineSyntax> syntaxes = InlineParser.defaultSyntaxes;
 
-    if (linkResolver != null) {
-      assert(syntaxes[2] is LinkSyntax);
-      syntaxes[2] = new LinkSyntax(linkResolver);
+    if (inlineSyntaxes != null || linkResolver != null) {
+      syntaxes = new List.from(syntaxes);
+
+      if (linkResolver != null) {
+        final LinkSyntax linkSyntax = new LinkSyntax(linkResolver);
+        for (int i = 0, len = syntaxes.length;; i++) {
+          if (i == len) {
+            syntaxes.add(linkSyntax);
+            break;
+          }
+          if (syntaxes[i] is LinkSyntax) {
+            syntaxes[i] = linkSyntax;
+            break;
+          }
+        }
+      }
+
+      if (inlineSyntaxes != null)
+        syntaxes.insertAll(0, inlineSyntaxes);
+        // Custom link resolver goes after the generic text syntax.
     }
-
-    if (inlineSyntaxes != null)
-      syntaxes.insertAll(0, inlineSyntaxes);
-      // Custom link resolver goes after the generic text syntax.
 
     return new Document._(syntaxes);
   }

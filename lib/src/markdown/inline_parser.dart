@@ -192,7 +192,6 @@ class TextSyntax extends InlineSyntax {
 class AutolinkSyntax extends InlineSyntax {
   AutolinkSyntax()
     : super(r'<((http|https|ftp)://[^>]*)>', caseSensitive: false);
-  // TODO(rnystrom): Make case insensitive.
 
   bool onMatch(InlineParser parser, Match match) {
     final url = match[1];
