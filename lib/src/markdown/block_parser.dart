@@ -485,6 +485,7 @@ class OrderedListSyntax extends ListSyntax {
 /// Parses paragraphs of regular text.
 class ParagraphSyntax extends BlockSyntax {
   bool get canEndBlock => false;
+  String get lineBreak => '\n';
 
   bool canParse(BlockParser parser) => true;
 
@@ -497,7 +498,7 @@ class ParagraphSyntax extends BlockSyntax {
       parser.advance();
     }
 
-    final contents = parser.document.parseInline(childLines.join('\n'));
+    final contents = parser.document.parseInline(childLines.join(lineBreak));
     return new Element('p', contents);
   }
 }
