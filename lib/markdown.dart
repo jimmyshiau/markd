@@ -46,7 +46,7 @@ class Document {
   final Map<String, Link> refLinks;
   final List<InlineSyntax> inlineSyntaxes;
 
-  factory Document(List<InlineSyntax> inlineSyntaxes, LinkResolver linkResolver) {
+  factory Document([List<InlineSyntax> inlineSyntaxes, LinkResolver linkResolver]) {
     List<InlineSyntax> syntaxes = InlineParser.defaultSyntaxes;
 
     if (inlineSyntaxes != null || linkResolver != null) {
