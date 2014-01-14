@@ -11,7 +11,7 @@ final _RE_EMPTY = new RegExp(r'^([ \t]*)$');
 final _RE_SETEXT = new RegExp(r'^((=+)|(-+))$');
 
 /// Leading (and trailing) `#` define atx-style headers.
-final _RE_HEADER = new RegExp(r'^(#{1,6})(.*?)#*$');
+final _RE_HEADER = new RegExp(r'^(#{1,6})\s+(.*?)#*$'); //Note: a whitespace required
 
 /// The line starts with `>` with one optional space after.
 final _RE_BLOCKQUOTE = new RegExp(r'^[ ]{0,3}>[ ]?(.*)$');

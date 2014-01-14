@@ -10,6 +10,8 @@ for easy customization of Markdown syntaxes.
 
 2. `InlineSyntax` introduces additional argument called `caseSensitive`.
 
+3. The header syntax requires a whitespace between `#` and the text. For example, `# foo` is a header, while `#foo` is not.
+
 
 Installation
 ------------
