@@ -152,8 +152,8 @@ abstract class InlineSyntax {
     : pattern = new RegExp(pattern, multiLine: true, caseSensitive: caseSensitive);
 
   bool tryMatch(InlineParser parser) {
-    final startMatch = pattern.firstMatch(parser.currentSource);
-    if ((startMatch != null) && (startMatch.start == 0)) {
+    final Match startMatch = matches(parser);
+    if (startMatch != null) {
       // Write any existing plain text up to this point.
       parser.writeText();
 
@@ -165,6 +165,11 @@ abstract class InlineSyntax {
     return false;
   }
 
+  ///Test if this syntax matches the current source.
+  Match matches(InlineParser parser) {
+    final Match startMatch = pattern.firstMatch(parser.currentSource);
+    return startMatch != null && startMatch.start == 0 ? startMatch: null;
+  }
   bool onMatch(InlineParser parser, Match match);
 }
 
