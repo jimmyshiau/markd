@@ -8,9 +8,9 @@ for easy customization of Markdown syntaxes.
 
 1. `LinkResolver` replaces `Resolver` to provide more options.
 
-2. `InlineSyntax` introduces additional argument called `caseSensitive`.
+2. `InlineSyntax` introduces additional argument, `caseSensitive`.
 
-3. The header syntax requires a whitespace between `#` and the text. For example, `# foo` is a header, while `#foo` is not.
+3. The header syntax requires a whitespace between `#` and the text, so `#foo` can represent a link (like Github does). For example, `# foo` is a header, while `#foo` is not.
 
 
 Installation
@@ -31,7 +31,7 @@ Usage
 -----
 
 ```dart
-import 'package:markdown/markdown.dart' show markdownToHtml;
+import 'package:markd/markdown.dart' show markdownToHtml;
 
 main() {
   print(markdownToHtml('Hello *Markdown*'));

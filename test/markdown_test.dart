@@ -439,7 +439,7 @@ void main() {
         code
         ```
         ''', '''
-        <pre><code>code
+        <pre class="dart"><code>code
         </code></pre>
         ''');
 
@@ -449,6 +449,37 @@ void main() {
         ```
         ''', '''
         <pre><code>&lt;&amp;&gt;
+        </code></pre>
+        ''');
+
+    validate('Pandoc style without language identifier', '''
+        ~~~~~
+        code
+        ~~~~~
+        ''', '''
+        <pre><code>code
+        </code></pre>
+        ''');
+
+    validate('Pandoc style with language identifier', '''
+        ~~~~~dart
+        code
+        ~~~~~
+        ''', '''
+        <pre class="dart"><code>code
+        </code></pre>
+        ''');
+
+    validate('Pandoc style with inner tildes row', '''
+        ~~~~~
+        ~~~
+        code
+        ~~~
+        ~~~~~
+        ''', '''
+        <pre><code>~~~
+        code
+        ~~~
         </code></pre>
         ''');
   });
@@ -852,9 +883,54 @@ void main() {
         <p>~=[,,_,,]:3</p>
         ''', inlineSyntaxes: nyanSyntax);
 
+    validate('dart custom links', 'links [are<foo>] awesome',
+      '<p>links <a>are&lt;foo></a> awesome</p>',
+      linkResolver: (text, url) => new Element.text('a', text.replaceAll('<',
+      '&lt;')));
+
     // TODO(amouravski): need more tests here for custom syntaxes, as some
     // things are not quite working properly. The regexps are sometime a little
     // too greedy, I think.
+  });
+
+  group('Inline only', () {
+    validate('simple line', '''
+        This would normally create a paragraph.
+        ''', '''
+        This would normally create a paragraph.
+        ''', inlineOnly: true);
+    validate('strong and em', '''
+        This would _normally_ create a **paragraph**.
+        ''', '''
+        This would <em>normally</em> create a <strong>paragraph</strong>.
+        ''', inlineOnly: true);
+    validate('link', '''
+        This [link](http://www.example.com/) will work normally.
+        ''', '''
+        This <a href="http://www.example.com/">link</a> will work normally.
+        ''', inlineOnly: true);
+    validate('references do not work', '''
+        [This][] shouldn't work, though.
+        ''', '''
+        [This][] shouldn't work, though.
+        ''', inlineOnly: true);
+    validate('less than and ampersand are escaped', '''
+        < &
+        ''', '''
+        &lt; &amp;
+        ''', inlineOnly: true);
+    validate('keeps newlines', '''
+        This paragraph
+        continues after a newline.
+        ''', '''
+        This paragraph
+        continues after a newline.
+        ''', inlineOnly: true);
+    validate('ignores block-level markdown syntax', '''
+        1. This will not be an <ol>.
+        ''', '''
+        1. This will not be an &lt;ol>.
+        ''', inlineOnly: true);
   });
 }
 
@@ -887,13 +963,14 @@ String cleanUpLiteral(String text) {
 }
 
 validate(String description, String markdown, String html,
-         {bool verbose: false, inlineSyntaxes, linkResolver}) {
+         {bool verbose: false, inlineSyntaxes, linkResolver,
+          bool inlineOnly: false}) {
   test(description, () {
     markdown = cleanUpLiteral(markdown);
     html = cleanUpLiteral(html);
 
     var result = markdownToHtml(markdown, inlineSyntaxes: inlineSyntaxes,
-        linkResolver: linkResolver);
+        linkResolver: linkResolver, inlineOnly: inlineOnly);
     var passed = compareOutput(html, result);
 
     if (!passed) {
