@@ -1,9 +1,9 @@
 name: markd
-version: 0.5.0+3
+version: 0.5.1
 authors:
 - Dart Team <misc@dartlang.org>
 - Tom Yeh <tomyeh@rikulo.org>
-description: A fork of dart-markdown for converting markdown to HTML.
+description: A fork of dart-markdown for easy customizing markdown syntaxes.
 homepage: https://github.com/tomyeh/markd
 dev_dependencies:
   unittest: any
