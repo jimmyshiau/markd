@@ -6,9 +6,7 @@
 library markdownTests;
 
 import 'package:unittest/unittest.dart';
-
-// TODO(rnystrom): Use "package:" URL (#4968).
-import '../lib/markdown.dart';
+import 'package:markd/markdown.dart';
 
 /// Most of these tests are based on observing how showdown behaves:
 /// http://softwaremaniacs.org/playground/showdown-highlight/
@@ -864,14 +862,106 @@ void main() {
         ''');
   });
 
+  group('Inline Images', () {
+    validate('image','''
+        ![](http://foo.com/foo.png)
+        ''','''
+        <p>
+          <a href="http://foo.com/foo.png">
+            <img src="http://foo.com/foo.png"></img>
+          </a>
+        </p>
+        ''');
+
+    validate('alternate text','''
+        ![alternate text](http://foo.com/foo.png)
+        ''','''
+        <p>
+          <a href="http://foo.com/foo.png">
+            <img alt="alternate text" src="http://foo.com/foo.png"></img>
+          </a>
+        </p>
+        ''');
+
+    validate('title','''
+        ![](http://foo.com/foo.png "optional title")
+        ''','''
+        <p>
+          <a href="http://foo.com/foo.png" title="optional title">
+            <img src="http://foo.com/foo.png" title="optional title"></img>
+          </a>
+        </p>
+        ''');
+    validate('invalid alt text','''
+        ![`alt`](http://foo.com/foo.png)
+        ''','''
+        <p>
+          <a href="http://foo.com/foo.png">
+            <img src="http://foo.com/foo.png"></img>
+          </a>
+        </p>
+        ''');
+  });
+
+  group('Reference Images', () {
+    validate('image','''
+        ![][foo]
+        [foo]: http://foo.com/foo.png
+        ''','''
+        <p>
+          <a href="http://foo.com/foo.png">
+            <img src="http://foo.com/foo.png"></img>
+          </a>
+        </p>
+        ''');
+
+    validate('alternate text','''
+        ![alternate text][foo]
+        [foo]: http://foo.com/foo.png
+        ''','''
+        <p>
+          <a href="http://foo.com/foo.png">
+            <img alt="alternate text" src="http://foo.com/foo.png"></img>
+          </a>
+        </p>
+        ''');
+
+    validate('title','''
+        ![][foo]
+        [foo]: http://foo.com/foo.png "optional title"
+        ''','''
+        <p>
+          <a href="http://foo.com/foo.png" title="optional title">
+            <img src="http://foo.com/foo.png" title="optional title"></img>
+          </a>
+        </p>
+        ''');
+
+    validate('invalid alt text','''
+        ![`alt`][foo]
+        [foo]: http://foo.com/foo.png "optional title"
+        ''','''
+        <p>
+          <a href="http://foo.com/foo.png" title="optional title">
+            <img src="http://foo.com/foo.png" title="optional title"></img>
+          </a>
+        </p>
+        ''');
+
+  });
+
   group('Resolver', () {
-    var nyanResolver = (String text, String url) =>
-        url != null ? url: new Text('~=[,,_${text}_,,]:3');
-    validate('simple resolver', '''
+    var nyanResolver = (text) => new Text('~=[,,_${text}_,,]:3');
+    validate('simple link resolver', '''
         resolve [this] thing
         ''', '''
         <p>resolve ~=[,,_this_,,]:3 thing</p>
         ''', linkResolver: nyanResolver);
+    validate('simple image resolver', '''
+        resolve ![this] thing
+        ''', '''
+        <p>resolve ~=[,,_this_,,]:3 thing</p>
+        ''', imageLinkResolver: nyanResolver);
   });
 
   group('Custom inline syntax', () {
@@ -885,7 +975,7 @@ void main() {
 
     validate('dart custom links', 'links [are<foo>] awesome',
       '<p>links <a>are&lt;foo></a> awesome</p>',
-      linkResolver: (text, url) => new Element.text('a', text.replaceAll('<',
+      linkResolver: (text) => new Element.text('a', text.replaceAll('<',
       '&lt;')));
 
     // TODO(amouravski): need more tests here for custom syntaxes, as some
@@ -962,34 +1052,34 @@ String cleanUpLiteral(String text) {
   return lines.join('\n');
 }
 
-validate(String description, String markdown, String html,
-         {bool verbose: false, inlineSyntaxes, linkResolver,
-          bool inlineOnly: false}) {
+void validate(String description, String markdown, String html,
+  {bool verbose: false, List<InlineSyntax> inlineSyntaxes,
+  Resolver linkResolver, Resolver imageLinkResolver, bool inlineOnly: false}) {
   test(description, () {
     markdown = cleanUpLiteral(markdown);
     html = cleanUpLiteral(html);
 
     var result = markdownToHtml(markdown, inlineSyntaxes: inlineSyntaxes,
-        linkResolver: linkResolver, inlineOnly: inlineOnly);
+        linkResolver: linkResolver, imageLinkResolver: imageLinkResolver,
+        inlineOnly: inlineOnly);
     var passed = compareOutput(html, result);
 
     if (!passed) {
       // Remove trailing newline.
       html = html.substring(0, html.length - 1);
 
-      print('FAIL: $description');
-      print('  expect: ${html.replaceAll("\n", "\n          ")}');
-      print('  actual: ${result.replaceAll("\n", "\n          ")}');
-      print('');
-    }
+      var sb = new StringBuffer();
+      sb.writeln('Expected: ${html.replaceAll("\n", "\n          ")}');
+      sb.writeln('  Actual: ${result.replaceAll("\n", "\n          ")}');
 
-    expect(passed, isTrue, verbose: verbose);
+      fail(sb.toString());
+    }
   });
 }
 
 /// Does a loose comparison of the two strings of HTML. Ignores differences in
 /// newlines and indentation.
-compareOutput(String a, String b) {
+bool compareOutput(String a, String b) {
   int i = 0;
   int j = 0;
 

@@ -1,5 +1,5 @@
-Dart Markdown Library
-=====================
+markd - Dart Markdown Library
+=============================
 
 A fork of [David Peek's dart-markdown](https://github.com/dpeek/dart-markdown)
 for easy customization of Markdown syntaxes.
@@ -13,29 +13,32 @@ for easy customization of Markdown syntaxes.
 3. The header syntax requires a whitespace between `#` and the text, so `#foo` can represent a link (like Github does). For example, `# foo` is a header, while `#foo` is not.
 
 
-Installation
-------------
-
-Add this to your `pubspec.yaml` (or create it):
-
-```yaml
-dependencies:
-  markd: any
-```
-
-Then run the [Pub Package Manager][pub] (comes with the Dart SDK):
-
-    pub install
-
 Usage
 -----
 
+[You can find the installation directions here.][installing]
+
 ```dart
-import 'package:markd/markdown.dart' show markdownToHtml;
+import 'package:markdown/markdown.dart' show markdownToHtml;
 
 main() {
   print(markdownToHtml('Hello *Markdown*'));
+  //=> <p>Hello <em>Markdown</em></p>
 }
 ```
 
-[pub]: http://www.dartlang.org/docs/pub-package-manager
+You can create and use your own syntaxes!
+
+```dart
+import 'package:markdown/markdown.dart';
+
+main() {
+  List<InlineSyntax> syntaxes = [new TextSyntax('nyan', sub: '~=[,,_,,]:3')];
+  print(markdownToHtml('nyan', inlineSyntaxes: syntaxes));
+  //=> <p>~=[,,_,,]:3</p>
+}
+```
+[You can find the documentation for this library here.][documentation]
+
+[installing]: http://pub.dartlang.org/packages/markdown#installing
+[documentation]: http://www.dartdocs.org/documentation/markdown/0.7.0/index.html

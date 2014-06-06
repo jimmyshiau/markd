@@ -1,9 +1,11 @@
 name: markd
-version: 0.5.1
+version: 0.7.1
 authors:
 - Dart Team <misc@dartlang.org>
 - Tom Yeh <tomyeh@rikulo.org>
 description: A fork of dart-markdown for easy customizing markdown syntaxes.
 homepage: https://github.com/tomyeh/markd
+environment:
+  sdk: '>=1.0.0 <2.0.0'
 dev_dependencies:
-  unittest: any
+  unittest: '>=0.9.0 <0.11.0'

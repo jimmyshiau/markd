@@ -2,12 +2,16 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-part of markdown;
+library markdown.inline_parser;
+
+import 'ast.dart';
+import 'document.dart';
+import 'util.dart';
 
 /// Maintains the internal state needed to parse inline span elements in
 /// markdown.
 class InlineParser {
-  static List<InlineSyntax>  defaultSyntaxes = <InlineSyntax>[
+  static List<InlineSyntax> _defaultSyntaxes = <InlineSyntax>[
     // This first regexp matches plain text to accelerate parsing.  It must
     // be written so that it does not match any prefix of any following
     // syntax.  Most markdown is plain text, so it is faster to match one
@@ -25,6 +29,7 @@ class InlineParser {
 
     new AutolinkSyntax(),
     new LinkSyntax(),
+    new ImageLinkSyntax(),
     // "*" surrounded by spaces is left alone.
     new TextSyntax(r' \* '),
     // "_" surrounded by spaces is left alone.
@@ -59,6 +64,8 @@ class InlineParser {
   /// The markdown document this parser is parsing.
   final Document document;
 
+  final List<InlineSyntax> syntaxes = <InlineSyntax>[];
+
   /// The current read position.
   int pos = 0;
 
@@ -68,7 +75,18 @@ class InlineParser {
   final List<TagState> _stack;
 
   InlineParser(this.source, this.document)
-    : _stack = <TagState>[];
+    : _stack = <TagState>[] {
+    /// User specified syntaxes will be the first syntaxes to be evaluated.
+    if (document.inlineSyntaxes != null) {
+      syntaxes.addAll(document.inlineSyntaxes);
+    }
+    syntaxes.addAll(_defaultSyntaxes);
+    // Custom link resolvers goes after the generic text syntax.
+    syntaxes.insertAll(1, [
+      new LinkSyntax(linkResolver: document.linkResolver),
+      new ImageLinkSyntax(linkResolver: document.imageLinkResolver)
+    ]);
+  }
 
   List<Node> parse() {
     // Make a fake top tag to hold the results.
@@ -88,7 +106,7 @@ class InlineParser {
       if (matched) continue;
 
       // See if the current text matches any defined markdown syntax.
-      for (final syntax in document.inlineSyntaxes) {
+      for (final syntax in syntaxes) {
         if (syntax.tryMatch(this)) {
           matched = true;
           break;
@@ -104,12 +122,12 @@ class InlineParser {
     return _stack[0].close(this, null);
   }
 
-  writeText() {
+  void writeText() {
     writeTextRange(start, pos);
     start = pos;
   }
 
-  writeTextRange(int start, int end) {
+  void writeTextRange(int start, int end) {
     if (end > start) {
       final text = source.substring(start, end);
       final nodes = _stack.last.children;
@@ -124,7 +142,7 @@ class InlineParser {
     }
   }
 
-  addNode(Node node) {
+  void addNode(Node node) {
     _stack.last.children.add(node);
   }
 
@@ -148,12 +166,12 @@ class InlineParser {
 abstract class InlineSyntax {
   final RegExp pattern;
 
-  InlineSyntax(String pattern, {bool caseSensitive: true})
-    : pattern = new RegExp(pattern, multiLine: true, caseSensitive: caseSensitive);
+  InlineSyntax(String pattern)
+    : pattern = new RegExp(pattern, multiLine: true);
 
   bool tryMatch(InlineParser parser) {
-    final Match startMatch = matches(parser);
-    if (startMatch != null) {
+    final startMatch = pattern.firstMatch(parser.currentSource);
+    if ((startMatch != null) && (startMatch.start == 0)) {
       // Write any existing plain text up to this point.
       parser.writeText();
 
@@ -165,17 +183,12 @@ abstract class InlineSyntax {
     return false;
   }
 
-  ///Test if this syntax matches the current source.
-  Match matches(InlineParser parser) {
-    final Match startMatch = pattern.firstMatch(parser.currentSource);
-    return startMatch != null && startMatch.start == 0 ? startMatch: null;
-  }
   bool onMatch(InlineParser parser, Match match);
 }
 
 /// Matches stuff that should just be passed through as straight text.
 class TextSyntax extends InlineSyntax {
-  String substitute;
+  final String substitute;
   TextSyntax(String pattern, {String sub})
     : super(pattern),
       substitute = sub;
@@ -196,13 +209,14 @@ class TextSyntax extends InlineSyntax {
 /// Matches autolinks like `<http://foo.com>`.
 class AutolinkSyntax extends InlineSyntax {
   AutolinkSyntax()
-    : super(r'<((http|https|ftp)://[^>]*)>', caseSensitive: false);
+    : super(r'<((http|https|ftp)://[^>]*)>');
+  // TODO(rnystrom): Make case insensitive.
 
   bool onMatch(InlineParser parser, Match match) {
     final url = match[1];
 
-    final anchor = new Element.text('a', escapeHtml(url));
-    anchor.attributes['href'] = url;
+    final anchor = new Element.text('a', escapeHtml(url))
+      ..attributes['href'] = url;
     parser.addNode(anchor);
 
     return true;
@@ -235,12 +249,15 @@ class TagSyntax extends InlineSyntax {
 
 /// Matches inline links like `[blah] [id]` and `[blah] (url)`.
 class LinkSyntax extends TagSyntax {
-  final LinkResolver _linkResolver;
+  final Resolver linkResolver;
+
+  /// Weather or not this link was resolved by a [Resolver]
+  bool resolved = false;
 
   /// The regex for the end of a link needs to handle both reference style and
   /// inline styles as well as optional titles for inline links. To make that
   /// a bit more palatable, this breaks it into pieces.
-  static String get _linkPattern {
+  static get linkPattern {
     final refLink    = r'\s?\[([^\]]*)\]';        // "[id]" reflink id.
     final title      = r'(?:[ ]*"([^"]+)"|)';     // Optional title in quotes.
     final inlineLink = '\\s?\\(([^ )]+)$title\\)'; // "(url "title")" link.
@@ -254,90 +271,106 @@ class LinkSyntax extends TagSyntax {
     // 4: Contains the title, if present, for an inline link.
   }
 
-  LinkSyntax([this._linkResolver])
-    : super(r'\[', end: _linkPattern);
+  LinkSyntax({this.linkResolver, String pattern: r'\['})
+    : super(pattern, end: linkPattern);
 
-  bool onMatchEnd(InlineParser parser, Match match, TagState state) {
-    String url;
-    String title;
-
+  Node createNode(InlineParser parser, Match match, TagState state) {
     // If we didn't match refLink or inlineLink, then it means there was
     // nothing after the first square bracket, so it isn't a normal markdown
     // link at all. Instead, we allow users of the library to specify a special
-    // resolver function ([_linkResolver]) that may choose to handle
+    // resolver function ([linkResolver]) that may choose to handle
     // this. Otherwise, it's just treated as plain text.
-    if ((match[1] == null) || (match[1] == '')) {
-      if (_linkResolver == null) return false;
+    if (isNullOrEmpty(match[1])) {
+      if (linkResolver == null) return null;
 
       // Only allow implicit links if the content is just text.
       // TODO(rnystrom): Do we want to relax this?
-      if (state.children.any((child) => child is! Text)) return false;
+      if (state.children.any((child) => child is! Text)) return null;
       // If there are multiple children, but they are all text, send the
       // combined text to linkResolver.
       var textToResolve = state.children.fold('',
           (oldVal, child) => oldVal + child.text);
+
       // See if we have a resolver that will generate a link for us.
+      resolved = true;
+      return linkResolver(textToResolve);
+    } else {
+      Link link = getLink(parser, match, state);
+      if (link == null) return null;
 
-      final dynamic val = _linkResolver(textToResolve, null);
-      if (val == null) return false;
-      if (val is Node) {
-        parser.addNode(val);
-        return true;
-      }
-      assert(val is String);
-      url = val;
+      final Element node = new Element('a', state.children)
+        ..attributes["href"] = escapeHtml(link.url)
+        ..attributes['title'] = escapeHtml(link.title);
 
-    } else if ((match[3] != null) && (match[3] != '')) {
+      cleanMap(node.attributes);
+      return node;
+    }
+  }
+
+  Link getLink(InlineParser parser, Match match, TagState state) {
+    if ((match[3] != null) && (match[3] != '')) {
       // Inline link like [foo](url).
-      url = match[3];
-      title = match[4];
+      var url = match[3];
+      var title = match[4];
 
       // For whatever reason, markdown allows angle-bracketed URLs here.
       if (url.startsWith('<') && url.endsWith('>')) {
         url = url.substring(1, url.length - 1);
       }
 
-      url = _invokeResolver(state, url);
-      if (url == null) return false;
-
+      return new Link(null, url, title);
     } else {
+      var id;
       // Reference link like [foo] [bar].
-      String id = match[2];
-      if (id == '') {
+      if (match[2] == '')
         // The id is empty ("[]") so infer it from the contents.
         id = parser.source.substring(state.startPos + 1, parser.pos);
-      }
+      else
+        id = match[2];
 
       // References are case-insensitive.
       id = id.toLowerCase();
-
-      // Look up the link.
-      final link = parser.document.refLinks[id];
-      // If it's an unknown link just emit plaintext.
-      if (link == null) return false;
-
-      url = _invokeResolver(state, link.url);
-      if (url == null) return false;
-
-      title = link.title;
+      return parser.document.refLinks[id];
     }
-
-    final anchor = new Element('a', state.children);
-    anchor.attributes['href'] = escapeHtml(url);
-    if ((title != null) && (title != '')) {
-      anchor.attributes['title'] = escapeHtml(title);
-    }
-
-    parser.addNode(anchor);
-    return true;
   }
 
-  String _invokeResolver(TagState state, String url)
-  => _linkResolver == null ? url:
-    _linkResolver(
-      state.children.isEmpty || state.children[0] is! Text ? '':
-        (state.children[0] as Text).text, url);
+  bool onMatchEnd(InlineParser parser, Match match, TagState state) {
+    Node node = createNode(parser, match, state);
+    if (node == null) return false;
+    parser.addNode(node);
+    return true;
+  }
 }
+
+/// Matches images like `![alternate text](url "optional title")` and
+/// `![alternate text][url reference]`.
+class ImageLinkSyntax extends LinkSyntax {
+  final Resolver linkResolver;
+  ImageLinkSyntax({this.linkResolver})
+    : super(pattern: r'!\[');
+
+  Node createNode(InlineParser parser, Match match, TagState state) {
+    Node node = super.createNode(parser, match, state);
+    if (resolved) return node;
+    if (node == null) return null;
+
+    final Element imageElement = new Element.withTag("img")
+      ..attributes["src"] = node.attributes["href"]
+      ..attributes["title"] = node.attributes["title"]
+      ..attributes["alt"] = node.children
+        .map((e) => isNullOrEmpty(e) || e is! Text ? '' : e.text)
+        .join(' ');
+
+    cleanMap(imageElement.attributes);
+
+    node.children
+      ..clear()
+      ..add(imageElement);
+
+    return node;
+  }
+}
+
 
 /// Matches backtick-enclosed inline code blocks.
 class CodeSyntax extends InlineSyntax {
@@ -354,10 +387,10 @@ class CodeSyntax extends InlineSyntax {
 /// maintains a stack of these so it can handle nested tags.
 class TagState {
   /// The point in the original source where this tag started.
-  int startPos;
+  final int startPos;
 
   /// The point in the original source where open tag ended.
-  int endPos;
+  final int endPos;
 
   /// The syntax that created this node.
   final TagSyntax syntax;
