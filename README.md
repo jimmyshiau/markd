@@ -19,7 +19,7 @@ Usage
 [You can find the installation directions here.][installing]
 
 ```dart
-import 'package:markdown/markdown.dart' show markdownToHtml;
+import 'package:markd/markdown.dart' show markdownToHtml;
 
 main() {
   print(markdownToHtml('Hello *Markdown*'));
@@ -30,7 +30,7 @@ main() {
 You can create and use your own syntaxes!
 
 ```dart
-import 'package:markdown/markdown.dart';
+import 'package:markd/markdown.dart';
 
 main() {
   List<InlineSyntax> syntaxes = [new TextSyntax('nyan', sub: '~=[,,_,,]:3')];
