@@ -1,5 +1,5 @@
-markd - Dart Markdown Library
-=============================
+markd
+=====
 
 A fork of [David Peek's dart-markdown](https://github.com/dpeek/dart-markdown)
 for easy customization of Markdown syntaxes.

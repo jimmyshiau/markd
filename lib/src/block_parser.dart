@@ -15,7 +15,7 @@ final _RE_EMPTY = new RegExp(r'^([ \t]*)$');
 final _RE_SETEXT = new RegExp(r'^((=+)|(-+))$');
 
 /// Leading (and trailing) `#` define atx-style headers.
-final _RE_HEADER = new RegExp(r'^(#{1,6})(.*?)#*$');
+final _RE_HEADER = new RegExp(r'^(#{1,6})\s+(.*?)#*$'); //Note: a whitespace required
 
 /// The line starts with `>` with one optional space after.
 final _RE_BLOCKQUOTE = new RegExp(r'^[ ]{0,3}>[ ]?(.*)$');
@@ -92,7 +92,7 @@ class BlockParser {
 abstract class BlockSyntax {
   /// Gets the collection of built-in block parsers. To turn a series of lines
   /// into blocks, each of these will be tried in turn. Order matters here.
-  static const List<BlockSyntax> syntaxes = const[
+  static final List<BlockSyntax> syntaxes = [
     const EmptyBlockSyntax(),
     const BlockHtmlSyntax(),
     const SetextHeaderSyntax(),
@@ -514,6 +514,7 @@ class OrderedListSyntax extends ListSyntax {
 /// Parses paragraphs of regular text.
 class ParagraphSyntax extends BlockSyntax {
   bool get canEndBlock => false;
+  String get lineBreak => '\n';
 
   const ParagraphSyntax();
 
@@ -528,7 +529,7 @@ class ParagraphSyntax extends BlockSyntax {
       parser.advance();
     }
 
-    final contents = parser.document.parseInline(childLines.join('\n'));
+    final contents = parser.document.parseInline(childLines.join(lineBreak));
     return new Element('p', contents);
   }
 }

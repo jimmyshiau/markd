@@ -4,7 +4,17 @@
 
 library markdown.ast;
 
-typedef Node Resolver(String name);
+/** Returns the URL of the given link, a [Link], a [Node],
+ * or null if it is not a link.
+ *
+ * * [name] - the name of link, i.e., the text inside `[]`.
+ * * [url] - the URL of link, i.e., the text inside `()`. Notice that
+ * it is null if there is no `()` following `[]`.
+ *
+ * > Note: if [url] is null, you can return a [Node] instance (in additions
+ * to `null` or a String instance (URL)).
+ */
+typedef LinkResolver(String name, String url);
 
 /// Base class for any AST item. Roughly corresponds to Node in the DOM. Will
 /// be either an Element or Text.

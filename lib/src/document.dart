@@ -7,12 +7,17 @@ import 'inline_parser.dart';
 /// Maintains the context needed to parse a markdown document.
 class Document {
   final Map<String, Link> refLinks;
-  List<InlineSyntax> inlineSyntaxes;
-  Resolver linkResolver;
-  Resolver imageLinkResolver;
+  final List<InlineSyntax> inlineSyntaxes;
 
-  Document({this.inlineSyntaxes, this.linkResolver, this.imageLinkResolver})
-    : refLinks = <String, Link>{};
+  Document({inlineSyntaxes, linkResolver, imageLinkResolver})
+    : refLinks = <String, Link>{},
+      this.inlineSyntaxes = InlineParser.getInlineSyntaxes(
+        inlineSyntaxes: inlineSyntaxes, linkResolver: linkResolver,
+        imageLinkResolver: imageLinkResolver);
+
+  Document.plain()
+    : refLinks = <String, Link>{},
+      this.inlineSyntaxes = InlineParser.defaultSyntaxes;
 
   parseRefLinks(List<String> lines) {
     // This is a hideous regex. It matches:

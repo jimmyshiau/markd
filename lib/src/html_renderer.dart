@@ -10,7 +10,8 @@ import 'inline_parser.dart';
 
 /// Converts the given string of markdown to HTML.
 String markdownToHtml(String markdown, {List<InlineSyntax> inlineSyntaxes,
-  Resolver linkResolver, Resolver imageLinkResolver, bool inlineOnly: false}) {
+  LinkResolver linkResolver, LinkResolver imageLinkResolver,
+  bool inlineOnly: false}) {
   var document = new Document(inlineSyntaxes: inlineSyntaxes,
     imageLinkResolver: imageLinkResolver, linkResolver: linkResolver);
 
@@ -57,12 +58,8 @@ class HtmlRenderer implements NodeVisitor {
 
     buffer.write('<${element.tag}');
 
-    // Sort the keys so that we generate stable output.
-    // TODO(rnystrom): This assumes keys returns a fresh mutable
-    // collection.
-    final attributeNames = element.attributes.keys.toList();
-    attributeNames.sort((a, b) => a.compareTo(b));
-    for (final name in attributeNames) {
+    // Don't sort to keep the way it was added and for better performance
+    for (final name in element.attributes.keys) {
       buffer.write(' $name="${element.attributes[name]}"');
     }
 

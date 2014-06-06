@@ -878,7 +878,7 @@ void main() {
         ''','''
         <p>
           <a href="http://foo.com/foo.png">
-            <img alt="alternate text" src="http://foo.com/foo.png"></img>
+            <img src="http://foo.com/foo.png" alt="alternate text"></img>
           </a>
         </p>
         ''');
@@ -921,7 +921,7 @@ void main() {
         ''','''
         <p>
           <a href="http://foo.com/foo.png">
-            <img alt="alternate text" src="http://foo.com/foo.png"></img>
+            <img src="http://foo.com/foo.png" alt="alternate text"></img>
           </a>
         </p>
         ''');
@@ -951,7 +951,7 @@ void main() {
   });
 
   group('Resolver', () {
-    var nyanResolver = (text) => new Text('~=[,,_${text}_,,]:3');
+    var nyanResolver = (text, url) => new Text('~=[,,_${text}_,,]:3');
     validate('simple link resolver', '''
         resolve [this] thing
         ''', '''
@@ -975,7 +975,7 @@ void main() {
 
     validate('dart custom links', 'links [are<foo>] awesome',
       '<p>links <a>are&lt;foo></a> awesome</p>',
-      linkResolver: (text) => new Element.text('a', text.replaceAll('<',
+      linkResolver: (text, url) => new Element.text('a', text.replaceAll('<',
       '&lt;')));
 
     // TODO(amouravski): need more tests here for custom syntaxes, as some
@@ -1054,7 +1054,7 @@ String cleanUpLiteral(String text) {
 
 void validate(String description, String markdown, String html,
   {bool verbose: false, List<InlineSyntax> inlineSyntaxes,
-  Resolver linkResolver, Resolver imageLinkResolver, bool inlineOnly: false}) {
+  LinkResolver linkResolver, LinkResolver imageLinkResolver, bool inlineOnly: false}) {
   test(description, () {
     markdown = cleanUpLiteral(markdown);
     html = cleanUpLiteral(html);

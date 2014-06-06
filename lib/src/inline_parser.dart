@@ -58,13 +58,54 @@ class InlineParser {
     // We will add the LinkSyntax once we know about the specific link resolver.
   ];
 
+  static List<InlineSyntax> get defaultSyntaxes => _defaultSyntaxes;
+  static List<InlineSyntax> getInlineSyntaxes({List<InlineSyntax> inlineSyntaxes,
+      LinkResolver linkResolver, LinkResolver imageLinkResolver}) {
+
+    if (inlineSyntaxes == null && linkResolver == null && imageLinkResolver == null)
+      return _defaultSyntaxes;
+
+    final List<InlineSyntax> syntaxes = new List.from(_defaultSyntaxes);
+ 
+    if (linkResolver != null) {
+      final LinkSyntax linkSyntax = new LinkSyntax(linkResolver: linkResolver);
+      for (int i = 0, len = syntaxes.length;; i++) {
+        if (i == len) {
+          syntaxes.add(linkSyntax);
+          break;
+        }
+        if (syntaxes[i] is LinkSyntax) {
+          syntaxes[i] = linkSyntax;
+          break;
+        }
+      }
+    }
+
+    if (imageLinkResolver != null) {
+      final ImageLinkSyntax imageLinkSyntax =
+        new ImageLinkSyntax(linkResolver: imageLinkResolver);
+      for (int i = 0, len = syntaxes.length;; i++) {
+        if (i == len) {
+          syntaxes.add(imageLinkSyntax);
+          break;
+        }
+        if (syntaxes[i] is ImageLinkSyntax) {
+          syntaxes[i] = imageLinkSyntax;
+          break;
+        }
+      }
+    }
+ 
+    if (inlineSyntaxes != null)
+      syntaxes.insertAll(0, inlineSyntaxes);
+    return syntaxes;
+  }
+
   /// The string of markdown being parsed.
   final String source;
 
   /// The markdown document this parser is parsing.
   final Document document;
-
-  final List<InlineSyntax> syntaxes = <InlineSyntax>[];
 
   /// The current read position.
   int pos = 0;
@@ -75,18 +116,7 @@ class InlineParser {
   final List<TagState> _stack;
 
   InlineParser(this.source, this.document)
-    : _stack = <TagState>[] {
-    /// User specified syntaxes will be the first syntaxes to be evaluated.
-    if (document.inlineSyntaxes != null) {
-      syntaxes.addAll(document.inlineSyntaxes);
-    }
-    syntaxes.addAll(_defaultSyntaxes);
-    // Custom link resolvers goes after the generic text syntax.
-    syntaxes.insertAll(1, [
-      new LinkSyntax(linkResolver: document.linkResolver),
-      new ImageLinkSyntax(linkResolver: document.imageLinkResolver)
-    ]);
-  }
+    : _stack = <TagState>[];
 
   List<Node> parse() {
     // Make a fake top tag to hold the results.
@@ -106,7 +136,7 @@ class InlineParser {
       if (matched) continue;
 
       // See if the current text matches any defined markdown syntax.
-      for (final syntax in syntaxes) {
+      for (final syntax in document.inlineSyntaxes) {
         if (syntax.tryMatch(this)) {
           matched = true;
           break;
@@ -166,12 +196,12 @@ class InlineParser {
 abstract class InlineSyntax {
   final RegExp pattern;
 
-  InlineSyntax(String pattern)
-    : pattern = new RegExp(pattern, multiLine: true);
+  InlineSyntax(String pattern, {bool caseSensitive: true})
+    : pattern = new RegExp(pattern, multiLine: true, caseSensitive: caseSensitive);
 
   bool tryMatch(InlineParser parser) {
-    final startMatch = pattern.firstMatch(parser.currentSource);
-    if ((startMatch != null) && (startMatch.start == 0)) {
+    final Match startMatch = matches(parser);
+    if (startMatch != null) {
       // Write any existing plain text up to this point.
       parser.writeText();
 
@@ -181,6 +211,12 @@ abstract class InlineSyntax {
       return true;
     }
     return false;
+  }
+
+  ///Test if this syntax matches the current source.
+  Match matches(InlineParser parser) {
+    final Match startMatch = pattern.firstMatch(parser.currentSource);
+    return startMatch != null && startMatch.start == 0 ? startMatch: null;
   }
 
   bool onMatch(InlineParser parser, Match match);
@@ -209,7 +245,7 @@ class TextSyntax extends InlineSyntax {
 /// Matches autolinks like `<http://foo.com>`.
 class AutolinkSyntax extends InlineSyntax {
   AutolinkSyntax()
-    : super(r'<((http|https|ftp)://[^>]*)>');
+    : super(r'<((http|https|ftp)://[^>]*)>', caseSensitive: false);
   // TODO(rnystrom): Make case insensitive.
 
   bool onMatch(InlineParser parser, Match match) {
@@ -249,7 +285,7 @@ class TagSyntax extends InlineSyntax {
 
 /// Matches inline links like `[blah] [id]` and `[blah] (url)`.
 class LinkSyntax extends TagSyntax {
-  final Resolver linkResolver;
+  final LinkResolver linkResolver;
 
   /// Weather or not this link was resolved by a [Resolver]
   bool resolved = false;
@@ -280,6 +316,7 @@ class LinkSyntax extends TagSyntax {
     // link at all. Instead, we allow users of the library to specify a special
     // resolver function ([linkResolver]) that may choose to handle
     // this. Otherwise, it's just treated as plain text.
+    Link link;
     if (isNullOrEmpty(match[1])) {
       if (linkResolver == null) return null;
 
@@ -293,18 +330,27 @@ class LinkSyntax extends TagSyntax {
 
       // See if we have a resolver that will generate a link for us.
       resolved = true;
-      return linkResolver(textToResolve);
+      final val = linkResolver(textToResolve, null);
+      if (val == null || val is Node)
+        return val;
+
+      if (val is Link) {
+        link = val;
+      } else {
+        assert(val is String);
+        link = new Link(null, val, null);
+      }
     } else {
-      Link link = getLink(parser, match, state);
+      link = getLink(parser, match, state);
       if (link == null) return null;
-
-      final Element node = new Element('a', state.children)
-        ..attributes["href"] = escapeHtml(link.url)
-        ..attributes['title'] = escapeHtml(link.title);
-
-      cleanMap(node.attributes);
-      return node;
     }
+
+    final Element node = new Element('a', state.children)
+      ..attributes["href"] = escapeHtml(link.url)
+      ..attributes['title'] = escapeHtml(link.title);
+
+    cleanMap(node.attributes);
+    return node;
   }
 
   Link getLink(InlineParser parser, Match match, TagState state) {
@@ -318,6 +364,10 @@ class LinkSyntax extends TagSyntax {
         url = url.substring(1, url.length - 1);
       }
 
+      url = _invokeResolver(state, url);
+      if (url == null || url is Link) return url;
+      assert(url is! Node); //not allowed here
+
       return new Link(null, url, title);
     } else {
       var id;
@@ -330,9 +380,23 @@ class LinkSyntax extends TagSyntax {
 
       // References are case-insensitive.
       id = id.toLowerCase();
-      return parser.document.refLinks[id];
+      final link = parser.document.refLinks[id];
+      if (link == null) return null;
+
+      var url = _invokeResolver(state, link.url);
+      if (url == null || url is Link) return url;
+      if (url == link.url) return link;
+      assert(url is! Node); //not allowed here
+
+      return new Link(null, url, link.title);
     }
   }
+
+  _invokeResolver(TagState state, String url)
+  => linkResolver == null ? url:
+      linkResolver(
+        state.children.isEmpty || state.children[0] is! Text ? '':
+          (state.children[0] as Text).text, url);
 
   bool onMatchEnd(InlineParser parser, Match match, TagState state) {
     Node node = createNode(parser, match, state);
@@ -345,7 +409,7 @@ class LinkSyntax extends TagSyntax {
 /// Matches images like `![alternate text](url "optional title")` and
 /// `![alternate text][url reference]`.
 class ImageLinkSyntax extends LinkSyntax {
-  final Resolver linkResolver;
+  final LinkResolver linkResolver;
   ImageLinkSyntax({this.linkResolver})
     : super(pattern: r'!\[');
 
@@ -354,16 +418,19 @@ class ImageLinkSyntax extends LinkSyntax {
     if (resolved) return node;
     if (node == null) return null;
 
+    assert(node is Element);
+    final Element nd = node;
+
     final Element imageElement = new Element.withTag("img")
-      ..attributes["src"] = node.attributes["href"]
-      ..attributes["title"] = node.attributes["title"]
-      ..attributes["alt"] = node.children
+      ..attributes["src"] = nd.attributes["href"]
+      ..attributes["title"] = nd.attributes["title"]
+      ..attributes["alt"] = nd.children
         .map((e) => isNullOrEmpty(e) || e is! Text ? '' : e.text)
         .join(' ');
 
     cleanMap(imageElement.attributes);
 
-    node.children
+    nd.children
       ..clear()
       ..add(imageElement);
 
