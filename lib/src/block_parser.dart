@@ -60,6 +60,9 @@ class BlockParser {
   BlockParser(this.lines, this.document)
     : _pos = 0;
 
+  ///The options passed to [document].
+  Map get options => document.options;
+
   /// Gets the current line.
   String get current => lines[_pos];
 

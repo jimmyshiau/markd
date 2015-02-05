@@ -152,6 +152,9 @@ class InlineParser {
     return _stack[0].close(this, null);
   }
 
+  ///The options passed to [document].
+  Map get options => document.options;
+
   void writeText() {
     writeTextRange(start, pos);
     start = pos;
