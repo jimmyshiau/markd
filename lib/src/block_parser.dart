@@ -61,7 +61,7 @@ class BlockParser {
     : _pos = 0;
 
   ///The options passed to [document].
-  Map get options => document.options;
+  get options => document.options;
 
   /// Gets the current line.
   String get current => lines[_pos];
@@ -309,7 +309,7 @@ class HorizontalRuleSyntax extends BlockSyntax {
   const HorizontalRuleSyntax();
 
   Node parse(BlockParser parser) {
-    final match = pattern.firstMatch(parser.current);
+    pattern.firstMatch(parser.current);
     parser.advance();
     return new Element.empty('hr');
   }
@@ -377,7 +377,6 @@ abstract class ListSyntax extends BlockSyntax {
       return match != null;
     }
 
-    bool afterEmpty = false;
     while (!parser.isDone) {
       if (tryMatch(_RE_EMPTY)) {
         // Add a blank line to the current list item.

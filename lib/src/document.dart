@@ -8,16 +8,15 @@ import 'inline_parser.dart';
 class Document {
   final Map<String, Link> refLinks;
   final List<InlineSyntax> inlineSyntaxes;
-  final Map options;
+  final options;
 
-  Document({inlineSyntaxes, linkResolver, imageLinkResolver,
-    Map this.options: const {}})
+  Document({inlineSyntaxes, linkResolver, imageLinkResolver, this.options})
     : refLinks = <String, Link>{},
       this.inlineSyntaxes = InlineParser.getInlineSyntaxes(
         inlineSyntaxes: inlineSyntaxes, linkResolver: linkResolver,
         imageLinkResolver: imageLinkResolver);
 
-  Document.plain({Map this.options: const {}})
+  Document.plain({this.options})
     : refLinks = <String, Link>{},
       this.inlineSyntaxes = InlineParser.defaultSyntaxes;
 

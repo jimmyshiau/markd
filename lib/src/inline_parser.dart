@@ -153,7 +153,7 @@ class InlineParser {
   }
 
   ///The options passed to [document].
-  Map get options => document.options;
+  get options => document.options;
 
   void writeText() {
     writeTextRange(start, pos);
