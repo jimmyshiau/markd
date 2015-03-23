@@ -94,7 +94,7 @@ class BlockParser {
 abstract class BlockSyntax {
   /// Gets the collection of built-in block parsers. To turn a series of lines
   /// into blocks, each of these will be tried in turn. Order matters here.
-  static final List<BlockSyntax> syntaxes = const [
+  static final List<BlockSyntax> syntaxes = [ //Note: const (so user can customize it)
     const EmptyBlockSyntax(),
     const BlockHtmlSyntax(),
     const SetextHeaderSyntax(),
