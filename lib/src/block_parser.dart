@@ -30,8 +30,8 @@ final _RE_CODE = new RegExp(r'^(`{3,}|~{3,})(.*)$');
 /// a line like `----` is valid as both HR and SETEXT. In case of a tie,
 /// SETEXT should win.
 final _RE_HR = new RegExp(r'^[ ]{0,3}((-+[ ]{0,2}){3,}|'
-                                 r'(_+[ ]{0,2}){3,}|'
-                                 r'(\*+[ ]{0,2}){3,})$');
+    r'(_+[ ]{0,2}){3,}|'
+    r'(\*+[ ]{0,2}){3,})$');
 
 /// Really hacky way to detect block-level embedded HTML. Just looks for
 /// "<somename".
@@ -57,8 +57,7 @@ class BlockParser {
   /// Index of the current line.
   int _pos;
 
-  BlockParser(this.lines, this.document)
-    : _pos = 0;
+  BlockParser(this.lines, this.document) : _pos = 0;
 
   ///The options passed to [document].
   get options => document.options;
@@ -95,7 +94,7 @@ class BlockParser {
 abstract class BlockSyntax {
   /// Gets the collection of built-in block parsers. To turn a series of lines
   /// into blocks, each of these will be tried in turn. Order matters here.
-  static final List<BlockSyntax> syntaxes = [
+  static final List<BlockSyntax> syntaxes = const [
     const EmptyBlockSyntax(),
     const BlockHtmlSyntax(),
     const SetextHeaderSyntax(),
@@ -158,7 +157,6 @@ class EmptyBlockSyntax extends BlockSyntax {
 
 /// Parses setext-style headers.
 class SetextHeaderSyntax extends BlockSyntax {
-
   const SetextHeaderSyntax();
 
   bool canParse(BlockParser parser) {
@@ -227,8 +225,8 @@ class CodeBlockSyntax extends BlockSyntax {
       } else {
         // If there's a codeblock, then a newline, then a codeblock, keep the
         // code blocks together.
-        var nextMatch = parser.next != null ?
-            pattern.firstMatch(parser.next) : null;
+        var nextMatch =
+            parser.next != null ? pattern.firstMatch(parser.next) : null;
         if (parser.current.trim() == '' && nextMatch != null) {
           childLines.add('');
           childLines.add(nextMatch[1]);
@@ -263,7 +261,7 @@ class FencedCodeBlockSyntax extends BlockSyntax {
   const FencedCodeBlockSyntax();
 
   List<String> parseChildLines(BlockParser parser, [String endBlock]) {
-    if(endBlock == null) endBlock = '';
+    if (endBlock == null) endBlock = '';
 
     final childLines = <String>[];
     parser.advance();
@@ -309,7 +307,6 @@ class HorizontalRuleSyntax extends BlockSyntax {
   const HorizontalRuleSyntax();
 
   Node parse(BlockParser parser) {
-    pattern.firstMatch(parser.current);
     parser.advance();
     return new Element.empty('hr');
   }

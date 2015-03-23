@@ -11,7 +11,7 @@ import 'util.dart';
 /// Maintains the internal state needed to parse inline span elements in
 /// markdown.
 class InlineParser {
-  static List<InlineSyntax> _defaultSyntaxes = <InlineSyntax>[
+  static final List<InlineSyntax> _defaultSyntaxes = <InlineSyntax>[
     // This first regexp matches plain text to accelerate parsing.  It must
     // be written so that it does not match any prefix of any following
     // syntax.  Most markdown is plain text, so it is faster to match one
@@ -229,8 +229,8 @@ abstract class InlineSyntax {
 class TextSyntax extends InlineSyntax {
   final String substitute;
   TextSyntax(String pattern, {String sub})
-    : super(pattern),
-      substitute = sub;
+      : super(pattern),
+        substitute = sub;
 
   bool onMatch(InlineParser parser, Match match) {
     if (substitute == null) {
@@ -269,14 +269,14 @@ class TagSyntax extends InlineSyntax {
   final String tag;
 
   TagSyntax(String pattern, {String tag, String end})
-    : super(pattern),
-      endPattern = new RegExp((end != null) ? end : pattern, multiLine: true),
-      tag = tag;
-    // TODO(rnystrom): Doing this.field doesn't seem to work with named args.
+      : super(pattern),
+        endPattern = new RegExp((end != null) ? end : pattern, multiLine: true),
+        tag = tag;
+  // TODO(rnystrom): Doing this.field doesn't seem to work with named args.
 
   bool onMatch(InlineParser parser, Match match) {
-    parser._stack.add(new TagState(parser.pos,
-      parser.pos + match[0].length, this));
+    parser._stack.add(
+        new TagState(parser.pos, parser.pos + match[0].length, this));
     return true;
   }
 
@@ -297,8 +297,8 @@ class LinkSyntax extends TagSyntax {
   /// inline styles as well as optional titles for inline links. To make that
   /// a bit more palatable, this breaks it into pieces.
   static get linkPattern {
-    final refLink    = r'\s?\[([^\]]*)\]';        // "[id]" reflink id.
-    final title      = r'(?:[ ]*"([^"]+)"|)';     // Optional title in quotes.
+    final refLink = r'\s?\[([^\]]*)\]'; // "[id]" reflink id.
+    final title = r'(?:[ ]*"([^"]+)"|)'; // Optional title in quotes.
     final inlineLink = '\\s?\\(([^ )]+)$title\\)'; // "(url "title")" link.
     return '\](?:($refLink|$inlineLink)|)';
 
@@ -311,7 +311,7 @@ class LinkSyntax extends TagSyntax {
   }
 
   LinkSyntax({this.linkResolver, String pattern: r'\['})
-    : super(pattern, end: linkPattern);
+      : super(pattern, end: linkPattern);
 
   Node createNode(InlineParser parser, Match match, TagState state) {
     // If we didn't match refLink or inlineLink, then it means there was
@@ -328,8 +328,8 @@ class LinkSyntax extends TagSyntax {
       if (state.children.any((child) => child is! Text)) return null;
       // If there are multiple children, but they are all text, send the
       // combined text to linkResolver.
-      var textToResolve = state.children.fold('',
-          (oldVal, child) => oldVal + child.text);
+      var textToResolve =
+          state.children.fold('', (oldVal, child) => oldVal + child.text);
 
       // See if we have a resolver that will generate a link for us.
       resolved = true;
@@ -376,10 +376,9 @@ class LinkSyntax extends TagSyntax {
       var id;
       // Reference link like [foo] [bar].
       if (match[2] == '')
-        // The id is empty ("[]") so infer it from the contents.
-        id = parser.source.substring(state.startPos + 1, parser.pos);
-      else
-        id = match[2];
+          // The id is empty ("[]") so infer it from the contents.
+          id = parser.source.substring(state.startPos + 1, parser.pos);
+      else id = match[2];
 
       // References are case-insensitive.
       id = id.toLowerCase();
@@ -413,11 +412,10 @@ class LinkSyntax extends TagSyntax {
 /// `![alternate text][url reference]`.
 class ImageLinkSyntax extends LinkSyntax {
   final LinkResolver linkResolver;
-  ImageLinkSyntax({this.linkResolver})
-    : super(pattern: r'!\[');
+  ImageLinkSyntax({this.linkResolver}) : super(pattern: r'!\[');
 
   Node createNode(InlineParser parser, Match match, TagState state) {
-    Node node = super.createNode(parser, match, state);
+    var node = super.createNode(parser, match, state);
     if (resolved) return node;
     if (node == null) return null;
 
@@ -425,11 +423,11 @@ class ImageLinkSyntax extends LinkSyntax {
     final Element nd = node;
 
     final Element imageElement = new Element.withTag("img")
-      ..attributes["src"] = nd.attributes["href"]
-      ..attributes["title"] = nd.attributes["title"]
-      ..attributes["alt"] = nd.children
-        .map((e) => isNullOrEmpty(e) || e is! Text ? '' : e.text)
-        .join(' ');
+      ..attributes["src"] = node.attributes["href"]
+      ..attributes["title"] = node.attributes["title"]
+      ..attributes["alt"] = node.children
+      .map((e) => isNullOrEmpty(e) || e is! Text ? '' : e.text)
+      .join(' ');
 
     cleanMap(imageElement.attributes);
 
@@ -441,11 +439,9 @@ class ImageLinkSyntax extends LinkSyntax {
   }
 }
 
-
 /// Matches backtick-enclosed inline code blocks.
 class CodeSyntax extends InlineSyntax {
-  CodeSyntax(String pattern)
-    : super(pattern);
+  CodeSyntax(String pattern) : super(pattern);
 
   bool onMatch(InlineParser parser, Match match) {
     parser.addNode(new Element.text('code', escapeHtml(match[1])));
@@ -468,8 +464,7 @@ class TagState {
   /// The children of this node. Will be `null` for text nodes.
   final List<Node> children;
 
-  TagState(this.startPos, this.endPos, this.syntax)
-    : children = <Node>[];
+  TagState(this.startPos, this.endPos, this.syntax) : children = <Node>[];
 
   /// Attempts to close this tag by matching the current text against its end
   /// pattern.

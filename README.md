@@ -12,28 +12,27 @@ for easy customization of Markdown syntaxes.
 
 3. The header syntax requires a whitespace between `#` and the text, so `#foo` can represent a link (like Github does). For example, `# foo` is a header, while `#foo` is not.
 
+4. The options argument is introduced to customize individual invocationx.
 
 Usage
 -----
 
-[You can find the installation directions here.][installing]
-
 ```dart
 import 'package:markd/markdown.dart' show markdownToHtml;
 
-main() {
+void main() {
   print(markdownToHtml('Hello *Markdown*'));
   //=> <p>Hello <em>Markdown</em></p>
 }
 ```
 
-You can create and use your own syntaxes!
+You can create and use your own syntaxes.
 
 ```dart
 import 'package:markd/markdown.dart';
 
-main() {
-  List<InlineSyntax> syntaxes = [new TextSyntax('nyan', sub: '~=[,,_,,]:3')];
+void main() {
+  var syntaxes = [new TextSyntax('nyan', sub: '~=[,,_,,]:3')];
   print(markdownToHtml('nyan', inlineSyntaxes: syntaxes));
   //=> <p>~=[,,_,,]:3</p>
 }

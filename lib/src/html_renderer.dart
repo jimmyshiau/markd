@@ -19,7 +19,7 @@ String markdownToHtml(String markdown, {List<InlineSyntax> inlineSyntaxes,
     return renderToHtml(document.parseInline(markdown));
   } else {
     // Replace windows line endings with unix line endings, and split.
-    var lines = markdown.replaceAll('\r\n','\n').split('\n');
+    var lines = markdown.replaceAll('\r\n', '\n').split('\n');
     document.parseRefLinks(lines);
     var blocks = document.parseLines(lines);
     return renderToHtml(blocks);
@@ -51,8 +51,7 @@ class HtmlRenderer implements NodeVisitor {
 
   bool visitElementBefore(Element element) {
     // Hackish. Separate block-level elements with newlines.
-    if (!buffer.isEmpty &&
-        _BLOCK_TAGS.firstMatch(element.tag) != null) {
+    if (!buffer.isEmpty && _BLOCK_TAGS.firstMatch(element.tag) != null) {
       buffer.write('\n');
     }
 
