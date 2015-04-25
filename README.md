@@ -40,7 +40,7 @@ void main() {
 [You can find the documentation for this library here.][documentation]
 
 [installing]: http://pub.dartlang.org/packages/markd#installing
-[documentation]: http://www.dartdocs.org/documentation/markd/0.7.1+3/index.html#markd
+[documentation]: http://www.dartdocs.org/documentation/markd/0.7.1+5/index.html#markd
 
 
 ##Who Uses
