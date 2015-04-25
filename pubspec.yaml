@@ -1,5 +1,5 @@
 name: markd
-version: 0.7.1+4
+version: 0.7.1+5
 authors:
 - David Peek <ninjascript@gmail.com>
 - Tom Yeh <tomyeh@rikulo.org>
@@ -9,3 +9,5 @@ environment:
   sdk: '>=1.0.0 <2.0.0'
 dev_dependencies:
   unittest: '>=0.9.0 <0.12.0'
+dependencies:
+  rikulo_commons: ">=2.0.0"
