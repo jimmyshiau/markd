@@ -5,7 +5,7 @@
 /// Unit tests for markdown.
 library markdownTests;
 
-import 'package:unittest/unittest.dart';
+import 'package:test/test.dart';
 import 'package:markd/markdown.dart';
 
 /// Most of these tests are based on observing how showdown behaves:

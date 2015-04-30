@@ -8,6 +8,6 @@ homepage: https://github.com/tomyeh/markd
 environment:
   sdk: '>=1.0.0 <2.0.0'
 dev_dependencies:
-  unittest: '>=0.9.0 <0.12.0'
+  test: any
 dependencies:
   rikulo_commons: ">=2.0.0"
