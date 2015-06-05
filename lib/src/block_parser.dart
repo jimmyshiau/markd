@@ -24,7 +24,7 @@ final _RE_BLOCKQUOTE = new RegExp(r'^[ ]{0,3}>[ ]?(.*)$');
 final _RE_INDENT = new RegExp(r'^(?:    |\t)(.*)$');
 
 /// Fenced code block.
-final _RE_CODE = new RegExp(r'^(`{3,}|~{3,})(.*)$');
+final _RE_CODE = new RegExp(r'^(`{3,})(.*)$'); //not support pandoc (support strikethrough instead)
 
 /// Three or more hyphens, asterisks or underscores by themselves. Note that
 /// a line like `----` is valid as both HR and SETEXT. In case of a tie,
@@ -253,8 +253,7 @@ class CodeBlockSyntax extends BlockSyntax {
   }
 }
 
-/// Parses preformatted code blocks between two ~~~ or ``` sequences.
-/// [Pandoc's markdown documentation](http://johnmacfarlane.net/pandoc/demo/example9/pandocs-markdown.html).
+/// Parses preformatted code blocks between``` sequences.
 class FencedCodeBlockSyntax extends BlockSyntax {
   RegExp get pattern => _RE_CODE;
 

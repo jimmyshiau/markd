@@ -14,6 +14,10 @@ for easy customization of Markdown syntaxes.
 
 4. The options argument is introduced to customize individual invocationx.
 
+5. ~~strikethrough~~ is supported
+
+6. Pandoc style code block (~~~) is not supported.
+
 Usage
 -----
 
@@ -40,7 +44,7 @@ void main() {
 [You can find the documentation for this library here.][documentation]
 
 [installing]: http://pub.dartlang.org/packages/markd#installing
-[documentation]: http://www.dartdocs.org/documentation/markd/0.7.1+5/index.html#markd
+[documentation]: http://www.dartdocs.org/documentation/markd/0.7.1+6/index.html#markd
 
 
 ##Who Uses

@@ -47,6 +47,8 @@ class InlineParser {
     new TagSyntax(r'__', tag: 'strong'),
     // Parse "*emphasis*" tags.
     new TagSyntax(r'\*', tag: 'em'),
+    // Parse "~~deleted~~" tags.
+    new TagSyntax(r'~~', tag: 'del'),
     // Parse "_emphasis_" tags.
     // TODO(rnystrom): Underscores in the middle of a word should not be
     // parsed as emphasis like_in_this.
