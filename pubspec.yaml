@@ -1,13 +1,13 @@
 name: markd
-version: 0.7.1+6
+version: 0.8.0-dev
 authors:
 - David Peek <ninjascript@gmail.com>
 - Tom Yeh <tomyeh@rikulo.org>
 description: A fork of dart-markdown for easy customizing markdown syntaxes.
 homepage: https://github.com/tomyeh/markd
 environment:
-  sdk: '>=1.0.0 <2.0.0'
+  sdk: '>=1.8.0 <2.0.0'
 dev_dependencies:
-  test: any
+  test: '^0.12.4+1'
 dependencies:
   rikulo_commons: ">=2.0.0"
