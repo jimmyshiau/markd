@@ -11,13 +11,15 @@ import 'inline_parser.dart';
 /// Converts the given string of markdown to HTML.
 String markdownToHtml(String markdown,
     {List<InlineSyntax> inlineSyntaxes,
-    LinkResolver linkResolver,
-    LinkResolver imageLinkResolver,
+    Resolver linkResolver,
+    Resolver imageLinkResolver,
+    LinkMapper linkMapper,
     bool inlineOnly: false}) {
   var document = new Document(
       inlineSyntaxes: inlineSyntaxes,
       imageLinkResolver: imageLinkResolver,
-      linkResolver: linkResolver);
+      linkResolver: linkResolver,
+      linkMapper: linkMapper);
 
   if (inlineOnly) return renderToHtml(document.parseInline(markdown));
 

@@ -8,6 +8,10 @@ import 'ast.dart';
 import 'document.dart';
 import 'util.dart';
 
+///Maps an URL (specified in a reference).
+///If nothing to change, just return [url].
+typedef String LinkMapper(InlineParser parser, String url);
+
 /// Maintains the internal state needed to parse inline span elements in
 /// markdown.
 class InlineParser {
@@ -46,7 +50,7 @@ class InlineParser {
     new TagSyntax(r'__', tag: 'strong'),
     // Parse "*emphasis*" tags.
     new TagSyntax(r'\*', tag: 'em'),
-    // Parse "~~deleted~~" tags.
+    // Tom: Parse "~~deleted~~" tags.
     new TagSyntax(r'~~', tag: 'del'),
     // Parse "_emphasis_" tags.
     // TODO(rnystrom): Underscores in the middle of a word should not be
@@ -61,30 +65,33 @@ class InlineParser {
 
   static List<InlineSyntax> get defaultSyntaxes => _defaultSyntaxes;
   static List<InlineSyntax> getInlineSyntaxes({List<InlineSyntax> inlineSyntaxes,
-      LinkResolver linkResolver, LinkResolver imageLinkResolver}) {
+      Resolver linkResolver, Resolver imageLinkResolver,
+      LinkMapper linkMapper}) {
 
-    if (inlineSyntaxes == null && linkResolver == null && imageLinkResolver == null)
+    if (inlineSyntaxes == null && linkResolver == null && imageLinkResolver == null
+    && linkMapper == null)
       return _defaultSyntaxes;
 
     final List<InlineSyntax> syntaxes = new List.from(_defaultSyntaxes);
- 
-    if (linkResolver != null) {
-      final LinkSyntax linkSyntax = new LinkSyntax(linkResolver: linkResolver);
+
+    if (linkResolver != null || linkMapper != null) {
+      final LinkSyntax linkSyntax = new LinkSyntax(
+          linkResolver: linkResolver, linkMapper: linkMapper);
       for (int i = 0, len = syntaxes.length;; i++) {
         if (i == len) {
           syntaxes.add(linkSyntax);
           break;
         }
-        if (syntaxes[i] is LinkSyntax) {
+        if (syntaxes[i] is LinkSyntax && syntaxes[i] is! ImageLinkSyntax) {
           syntaxes[i] = linkSyntax;
           break;
         }
       }
     }
 
-    if (imageLinkResolver != null) {
-      final ImageLinkSyntax imageLinkSyntax =
-        new ImageLinkSyntax(linkResolver: imageLinkResolver);
+    if (imageLinkResolver != null || linkMapper != null) {
+      final ImageLinkSyntax imageLinkSyntax = new ImageLinkSyntax(
+          linkResolver: imageLinkResolver, linkMapper: linkMapper);
       for (int i = 0, len = syntaxes.length;; i++) {
         if (i == len) {
           syntaxes.add(imageLinkSyntax);
@@ -96,7 +103,7 @@ class InlineParser {
         }
       }
     }
- 
+
     if (inlineSyntaxes != null)
       syntaxes.insertAll(0, inlineSyntaxes);
     return syntaxes;
@@ -288,7 +295,8 @@ class TagSyntax extends InlineSyntax {
 
 /// Matches inline links like `[blah] [id]` and `[blah] (url)`.
 class LinkSyntax extends TagSyntax {
-  final LinkResolver linkResolver;
+  final Resolver linkResolver;
+  final LinkMapper linkMapper;
 
   /// The regex for the end of a link needs to handle both reference style and
   /// inline styles as well as optional titles for inline links. To make that
@@ -307,7 +315,7 @@ class LinkSyntax extends TagSyntax {
     // 4: Contains the title, if present, for an inline link.
   }
 
-  LinkSyntax({this.linkResolver, String pattern: r'\['})
+  LinkSyntax({this.linkResolver, this.linkMapper, String pattern: r'\['})
       : super(pattern, end: linkPattern);
 
   Node createNode(InlineParser parser, Match match, TagState state) {
@@ -316,7 +324,6 @@ class LinkSyntax extends TagSyntax {
     // link at all. Instead, we allow users of the library to specify a special
     // resolver function ([linkResolver]) that may choose to handle
     // this. Otherwise, it's just treated as plain text.
-    Link link;
     if (match[1] == null) {
       if (linkResolver == null) return null;
 
@@ -326,22 +333,10 @@ class LinkSyntax extends TagSyntax {
       var textToResolve = parser.source.substring(state.endPos, parser.pos);
 
       // See if we have a resolver that will generate a link for us.
-      final val = linkResolver(textToResolve, null);
-      if (val == null || val is Node)
-        return val;
-
-      if (val is Link) {
-        link = val;
-      } else {
-        assert(val is String);
-        link = new Link(null, val, null);
-      }
+      return linkResolver(textToResolve);
     } else {
-      link = getLink(parser, match, state);
-      if (link == null) return null;
+      return _createElement(parser, match, state);
     }
-
-    return _createElement(parser, match, state);
   }
 
   /// Given that [match] has matched both a title and URL, creates an `<a>`
@@ -371,7 +366,7 @@ class LinkSyntax extends TagSyntax {
         url = url.substring(1, url.length - 1);
       }
 
-      url = _invokeResolver(state, url);
+      url = _map(parser, url);
       if (url == null || url is Link) return url;
       assert(url is! Node); //not allowed here
 
@@ -391,7 +386,7 @@ class LinkSyntax extends TagSyntax {
       final link = parser.document.refLinks[id];
       if (link == null) return null;
 
-      var url = _invokeResolver(state, link.url);
+      var url = _map(parser, link.url);
       if (url == null || url is Link) return url;
       if (url == link.url) return link;
       assert(url is! Node); //not allowed here
@@ -400,11 +395,8 @@ class LinkSyntax extends TagSyntax {
     }
   }
 
-  _invokeResolver(TagState state, String url)
-  => linkResolver == null ? url:
-      linkResolver(
-        state.children.isEmpty || state.children[0] is! Text ? '':
-          (state.children[0] as Text).text, url);
+  _map(InlineParser parser, String url)
+  => linkMapper == null ? url: linkMapper(parser, url);
 
   bool onMatchEnd(InlineParser parser, Match match, TagState state) {
     var node = createNode(parser, match, state);
@@ -418,8 +410,8 @@ class LinkSyntax extends TagSyntax {
 /// Matches images like `![alternate text](url "optional title")` and
 /// `![alternate text][url reference]`.
 class ImageLinkSyntax extends LinkSyntax {
-  ImageLinkSyntax({LinkResolver linkResolver})
-      : super(linkResolver: linkResolver, pattern: r'!\[');
+  ImageLinkSyntax({Resolver linkResolver, LinkMapper linkMapper})
+      : super(linkResolver: linkResolver, linkMapper: linkMapper, pattern: r'!\[');
 
   /// Creates an <a> element from the given complete [match].
   Element _createElement(InlineParser parser, Match match, TagState state) {

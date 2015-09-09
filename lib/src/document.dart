@@ -10,11 +10,13 @@ class Document {
   final List<InlineSyntax> inlineSyntaxes;
   final options;
 
-  Document({inlineSyntaxes, linkResolver, imageLinkResolver, this.options})
+  Document({inlineSyntaxes, Resolver linkResolver, Resolver imageLinkResolver,
+    LinkMapper linkMapper, this.options})
     : refLinks = <String, Link>{},
       this.inlineSyntaxes = InlineParser.getInlineSyntaxes(
         inlineSyntaxes: inlineSyntaxes, linkResolver: linkResolver,
-        imageLinkResolver: imageLinkResolver);
+        imageLinkResolver: imageLinkResolver,
+        linkMapper: linkMapper);
 
   Document.plain({this.options})
     : refLinks = <String, Link>{},

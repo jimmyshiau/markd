@@ -2,11 +2,4 @@
 .packages
 .pub
 packages
-<<<<<<< HEAD
-pubspec.lock
-.project
-.children
-.pub
-out
-=======
->>>>>>> 9288e15aac60cb5edeff261040a0dc8aa25598ba
+*.iml

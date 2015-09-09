@@ -1297,7 +1297,7 @@ void main() {
   });
 
   group('Resolver', () {
-    Node nyanResolver(String text, url) => new Text('~=[,,_${text}_,,]:3');
+    Node nyanResolver(String text) => new Text('~=[,,_${text}_,,]:3');
 
     validate(
         'simple link resolver',
@@ -1342,7 +1342,7 @@ void main() {
 
     validate('dart custom links', 'links [are<foo>] awesome',
         '<p>links <a>are&lt;foo></a> awesome</p>',
-        linkResolver: (text, url) =>
+        linkResolver: (text) =>
             new Element.text('a', text.replaceAll('<', '&lt;')));
 
     // TODO(amouravski): need more tests here for custom syntaxes, as some
@@ -1449,7 +1449,7 @@ String cleanUpLiteral(String text) {
 
 void validate(String description, String markdown, String html,
     {List<InlineSyntax> inlineSyntaxes,
-    LinkResolver linkResolver, LinkResolver imageLinkResolver,
+    Resolver linkResolver, Resolver imageLinkResolver,
     bool inlineOnly: false}) {
   test(description, () {
     markdown = cleanUpLiteral(markdown);

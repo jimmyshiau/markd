@@ -6,7 +6,7 @@ for easy customization of Markdown syntaxes.
 
 **Differences:**
 
-1. `LinkResolver` replaces `Resolver` to provide more options.
+1. `LinkMapper` is introduced to map URL specified in a link.
 
 2. `InlineSyntax` introduces additional argument, `caseSensitive`.
 
@@ -17,6 +17,8 @@ for easy customization of Markdown syntaxes.
 5. ~~strikethrough~~ is supported
 
 6. Pandoc style code block (~~~) is not supported.
+
+> [API Reference](http://www.dartdocs.org/documentation/markd/0.8.0)
 
 Usage
 -----
