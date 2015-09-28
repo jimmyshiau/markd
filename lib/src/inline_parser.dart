@@ -10,7 +10,8 @@ import 'util.dart';
 
 ///Maps an URL (specified in a reference).
 ///If nothing to change, just return [url].
-typedef String LinkMapper(InlineParser parser, String url);
+///It can return null (if not a link), a [String] or a [Link].
+typedef LinkMapper(InlineParser parser, String url);
 
 /// Maintains the internal state needed to parse inline span elements in
 /// markdown.
@@ -368,7 +369,7 @@ class LinkSyntax extends TagSyntax {
 
       url = _map(parser, url);
       if (url == null || url is Link) return url;
-      assert(url is! Node); //not allowed here
+      assert(url is String);
 
       return new Link(null, url, title);
     } else {
@@ -389,7 +390,7 @@ class LinkSyntax extends TagSyntax {
       var url = _map(parser, link.url);
       if (url == null || url is Link) return url;
       if (url == link.url) return link;
-      assert(url is! Node); //not allowed here
+      assert(url is String);
 
       return new Link(null, url, link.title);
     }
