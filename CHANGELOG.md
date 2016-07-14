@@ -1,3 +1,7 @@
+## 0.8.1
+
+* Allow url with parenthesis and space, e.g., `![foo](link(1).png)`
+
 ## 0.8.0
 
 * Switch tests to use [test][] instead of [unittest][].

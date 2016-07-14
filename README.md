@@ -18,6 +18,8 @@ for easy customization of Markdown syntaxes.
 
 6. Pandoc style code block (~~~) is not supported.
 
+7. Allow URL with parenthesis, e.g., , e.g., `![foo](link(1).png)`
+
 > [API Reference](http://www.dartdocs.org/documentation/markd/0.8.0)
 
 Usage
