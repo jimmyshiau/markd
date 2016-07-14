@@ -304,8 +304,9 @@ class LinkSyntax extends TagSyntax {
   /// a bit more palatable, this breaks it into pieces.
   static get linkPattern {
     var refLink = r'\s?\[([^\]]*)\]'; // "[id]" reflink id.
-    var title = r'(?:[ ]*"([^"]+)"|)'; // Optional title in quotes.
-    var inlineLink = '\\s?\\(([^ )]+)$title\\)'; // "(url "title")" link.
+    var title = r'(?:\s*"([^"]+)"|)'; // Optional title in quotes.
+    var inlineLink = '\\s?\\(([^"]+)$title\\)'; // "(url "title")" link.
+        //#4: allow url with parenthesis and whitespaces
     return '\](?:($refLink|$inlineLink)|)';
 
     // The groups matched by this are:
@@ -359,13 +360,14 @@ class LinkSyntax extends TagSyntax {
   Link getLink(InlineParser parser, Match match, TagState state) {
     if (match[3] != null && match[3] != '') {
       // Inline link like [foo](url).
-      var url = match[3];
+      var url = match[3].trim(); //#4 trim spaces found in regex
       var title = match[4];
 
       // For whatever reason, markdown allows angle-bracketed URLs here.
-      if (url.startsWith('<') && url.endsWith('>')) {
-        url = url.substring(1, url.length - 1);
-      }
+//      if (url.startsWith('<') && url.endsWith('>')) {
+//        url = url.substring(1, url.length - 1);
+//      }
+//Tom: not worth to support it
 
       url = _map(parser, url);
       if (url == null || url is Link) return url;

@@ -1467,6 +1467,7 @@ void validate(String description, String markdown, String html,
       html = html.substring(0, html.length - 1);
 
       var sb = new StringBuffer();
+      sb.writeln('Markdown: $markdown');
       sb.writeln('Expected: ${html.replaceAll("\n", "\n          ")}');
       sb.writeln('  Actual: ${result.replaceAll("\n", "\n          ")}');
 
