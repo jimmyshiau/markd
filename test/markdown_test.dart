@@ -13,6 +13,22 @@ import 'util.dart';
 /// Most of these tests are based on observing how showdown behaves:
 /// http://softwaremaniacs.org/playground/showdown-highlight/
 void main() {
+  group('Special links', () {
+    validate('with balance parentheses',
+        '''[foo](link(1).png)''',
+        '''<p><a href="link(1).png">foo</a></p>''');
+    validate('following parentheses 1',
+        '''[foo](link) (what?)''',
+        '''<p><a href="link">foo</a> (what?)</p>''');
+    validate('following parentheses 2',
+        '''[foo](link(1).png) [foo2](link2)''',
+        '''<p><a href="link(1).png">foo</a> <a href="link2">foo2</a></p>''');
+//    validate('with non-balance parentheses',
+//        '''[foo](link(1.png) (what?)''',
+//        '''<p><a href="link">foo</a> (what?)</p>''');
+//Unable to handle it well
+  });
+
   group('Paragraphs', () {
     validate(
         'consecutive lines form a single paragraph',
