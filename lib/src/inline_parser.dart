@@ -303,10 +303,10 @@ class LinkSyntax extends TagSyntax {
   /// inline styles as well as optional titles for inline links. To make that
   /// a bit more palatable, this breaks it into pieces.
   static get linkPattern {
-    var url = r'(?:[^()"]|(?:\([^)]*\)))+';
+    var url = r'(?:[^() ]|(?:\s*\([^)]*\)\s*))+';
     var refLink = r'\s?\[([^\]]*)\]'; // "[id]" reflink id.
-    var title = r'(?:\s+"([^"]+)"|)'; // Optional title in quotes.
-    var inlineLink = '\\s?\\(($url)$title\\)'; // "(url "title")" link.
+    var title = r'(?:\s*"([^"]+)"|)'; // Optional title in quotes.
+    var inlineLink = '\\s?\\(\\s*($url)$title\\s*\\)'; // "(url "title")" link.
         //#4: allow url with parenthesis and whitespaces
     return '\](?:($refLink|$inlineLink)|)';
 
@@ -361,7 +361,7 @@ class LinkSyntax extends TagSyntax {
   Link getLink(InlineParser parser, Match match, TagState state) {
     if (match[3] != null && match[3] != '') {
       // Inline link like [foo](url).
-      var url = match[3];
+      var url = match[3].trim();
       var title = match[4];
 
       // For whatever reason, markdown allows angle-bracketed URLs here.

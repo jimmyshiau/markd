@@ -23,10 +23,26 @@ void main() {
     validate('following parentheses 2',
         '''[foo](link(1).png) [foo2](link2)''',
         '''<p><a href="link(1).png">foo</a> <a href="link2">foo2</a></p>''');
-//    validate('with non-balance parentheses',
-//        '''[foo](link(1.png) (what?)''',
-//        '''<p><a href="link">foo</a> (what?)</p>''');
-//Unable to handle it well
+    validate('following "',
+        '''[foo](link"ab".png)(what?)''',
+        '''<p><a href="link&quot;ab&quot;.png">foo</a>(what?)</p>''');
+    validate('following parentheses 3',
+        '''[foo]( link )(what?)[foo2]( link2 "title2" )''',
+        '''<p><a href="link">foo</a>(what?)<a href="link2" title="title2">foo2</a></p>''');
+
+    validate('complicated parentheses 1',
+        '''[foo](link (1) ) (what?)''',
+        '''<p><a href="link (1)">foo</a> (what?)</p>''');
+    validate('complicated parentheses 2',
+        '''[foo](link (a b) (1).png)(what?)''',
+        '''<p><a href="link (a b) (1).png">foo</a>(what?)</p>''');
+
+    validate('with non-balance parentheses',
+        '''[foo](link(1.png) (what?)''',
+        '''<p>[foo](link(1.png) (what?)</p>''');
+//the better result is as follows, but we can't:(
+//        '''<p><a href="link(1.png">foo</a> (what?)</p>''');
+    
   });
 
   group('Paragraphs', () {
